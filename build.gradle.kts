@@ -101,21 +101,10 @@ sourceSets {
 }
 
 zig {
-    zigVersion = "0.14.1"
+    zigVersion = "0.14.0"
     outputDir = layout.buildDirectory.dir("zig")
     targets {
-        create("x86_64-linux-gnu")
-        create("aarch64-linux-gnu")
-        create("x86_64-linux-musl")
-        create("aarch64-linux-musl")
         create("x86_64-windows-gnu")
-        create("aarch64-windows-gnu")
-        create("x86_64-macos") {
-            libcFile = layout.projectDirectory.file("libc-macos.txt")
-        }
-        create("aarch64-macos") {
-            libcFile = layout.projectDirectory.file("libc-macos.txt")
-        }
     }
 }
 

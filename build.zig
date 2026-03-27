@@ -9,6 +9,7 @@ pub fn build(b: *std.Build) void {
     const env = std.process.getEnvMap(b.allocator) catch unreachable;
     const java_home = env.get("JAVA_HOME") orelse unreachable;
     const java_include_path = std.fmt.allocPrint(b.allocator, "{s}/include", .{java_home}) catch unreachable;
+	const java_include_win32_path = std.fmt.allocPrint(b.allocator, "{s}/include/win32", .{java_home}) catch unreachable;
     const java_darwin_include_path = std.fmt.allocPrint(b.allocator, "{s}/include/darwin", .{java_home}) catch unreachable;
 
     // Add include directories
@@ -16,6 +17,7 @@ pub fn build(b: *std.Build) void {
     lib.addIncludePath(b.path("build/generated/sources/headers/version"));
     lib.addIncludePath(b.path("src/main/headers"));
     lib.addSystemIncludePath(.{ .cwd_relative = java_include_path });
+	lib.addSystemIncludePath(.{ .cwd_relative = java_include_win32_path });
     lib.addSystemIncludePath(.{ .cwd_relative = java_darwin_include_path });
 
     const base_cpp_args = &[_][]const u8{
@@ -32,7 +34,7 @@ pub fn build(b: *std.Build) void {
 
     const cpp_args = if (target.result.os.tag == .windows)
         base_cpp_args ++ &[_][]const u8{
-            "-DNTDDI_VERSION=NTDDI_WIN10_RS3",
+            "-DNTDDI_VERSION=NTDDI_WIN7",
             // Need this to actually get our functions in the export table
             "-DJNIEXPORT=__declspec(dllexport)",
         }

@@ -108,12 +108,12 @@ private:
     wstring registeredFinalPath;
 
     /**
-     * OVERLAPPED structure used with ReadDirectoryChangesExW.
+     * OVERLAPPED structure used with ReadDirectoryChangesW.
      */
     OVERLAPPED overlapped;
 
     /**
-     * Event buffer used with ReadDirectoryChangesExW.
+     * Event buffer used with ReadDirectoryChangesW.
      */
     vector<BYTE> eventBuffer;
 
@@ -142,7 +142,7 @@ protected:
     void shutdownRunLoop() override;
 
 private:
-    void handleEvent(JNIEnv* env, const wstring& watchedPath, FILE_NOTIFY_EXTENDED_INFORMATION* info);
+    void handleEvent(JNIEnv* env, const wstring& watchedPath, FILE_NOTIFY_INFORMATION* info);
 
     void registerPath(const u16string& path);
     bool unregisterPath(const u16string& path);

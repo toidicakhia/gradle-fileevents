@@ -79,9 +79,10 @@ public class FileEvents {
             case "windows-i386":
                 return "i386-windows-gnu";
             case "windows-amd64":
-                return "x86_64-windows-gnu";
+                return "x86_64-windows." + getWindowsVariant() + "-gnu";
             case "windows-aarch64":
-                return "aarch64-windows-gnu";
+                // ARM64 Windows requires Windows 10 or later
+                return "aarch64-windows.10-gnu";
             case "linux-i386":
                 return "i386-linux-" + getLinuxVariant();
             case "linux-amd64":
@@ -99,6 +100,30 @@ public class FileEvents {
 
     private static String getLinuxVariant() {
         return isLinuxWithMusl() ? "musl" : "gnu";
+    }
+
+    private static String getWindowsVariant() {
+        return isWindows10OrLater() ? "10" : "6.1";
+    }
+
+    /**
+     * Returns true when the JVM is running on Windows 10 or later (including Windows 11).
+     * Windows 7, 8, and 8.1 all have an OS major version of 6.
+     */
+    private static boolean isWindows10OrLater() {
+        String osVersion = System.getProperty("os.version");
+        if (osVersion != null) {
+            try {
+                String[] parts = osVersion.split("\\.");
+                if (parts.length > 0) {
+                    int majorVersion = Integer.parseInt(parts[0]);
+                    return majorVersion >= 10;
+                }
+            } catch (NumberFormatException ignored) {
+                // Fall through to the default
+            }
+        }
+        return false;
     }
 
     /**

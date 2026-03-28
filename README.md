@@ -8,7 +8,7 @@ A cross-platform library to watch for changes on the file-system.
 
 - macOS – `x86_64` (tested on 13 and 14) and `aarch64` (untested)
 - Linux – `x86_64`(tested on Ubuntu 20.04 and 24.04) and `aarch64` (untested)
-- Windows – `x86_64` (tested on Windows 2019 and 2022) and `aarch64` (untested)
+- Windows – `x86_64` on Windows 7/8/8.1 and Windows 10/11, `aarch64` on Windows 10/11 (untested)
 
 ## Building
 

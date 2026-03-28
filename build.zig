@@ -32,14 +32,24 @@ pub fn build(b: *std.Build) void {
         "-Wno-unguarded-availability-new",
     };
 
-    const cpp_args = if (target.result.os.tag == .windows)
-        base_cpp_args ++ &[_][]const u8{
-            "-DNTDDI_VERSION=NTDDI_WIN7",
-            // Need this to actually get our functions in the export table
-            "-DJNIEXPORT=__declspec(dllexport)",
-        }
-    else
-        base_cpp_args;
+    const win7_cpp_args = base_cpp_args ++ &[_][]const u8{
+        "-DNTDDI_VERSION=NTDDI_WIN7",
+        // Need this to actually get our functions in the export table
+        "-DJNIEXPORT=__declspec(dllexport)",
+    };
+    const win10_cpp_args = base_cpp_args ++ &[_][]const u8{
+        "-DNTDDI_VERSION=NTDDI_WIN10",
+        // Need this to actually get our functions in the export table
+        "-DJNIEXPORT=__declspec(dllexport)",
+    };
+
+    const cpp_args: []const []const u8 = if (target.result.os.tag == .windows) blk: {
+        // NTDDI_WIN10 in sdkddkver.h is 0x0A000000 (NT major version 10).
+        // Anything below that is Windows 7/8/8.1 (NT 6.x) or older.
+        const ntddi_win10: u32 = 0x0A000000;
+        const is_win10_or_later = @intFromEnum(target.result.os.version_range.windows.min) >= ntddi_win10;
+        break :blk if (is_win10_or_later) &win10_cpp_args else &win7_cpp_args;
+    } else base_cpp_args;
 
     // Add source files
     lib.addCSourceFiles(.{

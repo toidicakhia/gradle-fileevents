@@ -48,7 +48,7 @@ pub fn build(b: *std.Build) void {
         // Anything below that is Windows 7/8/8.1 (NT 6.x) or older.
         const ntddi_win10: u32 = 0x0A000000;
         const is_win10_or_later = @intFromEnum(target.result.os.version_range.windows.min) >= ntddi_win10;
-        break :blk if (is_win10_or_later) &win10_cpp_args else &win7_cpp_args;
+        break :blk if (is_win10_or_later) win10_cpp_args[0..] else win7_cpp_args[0..];
     } else base_cpp_args;
 
     // Add source files

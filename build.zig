@@ -37,19 +37,37 @@ pub fn build(b: *std.Build) void {
         // Need this to actually get our functions in the export table
         "-DJNIEXPORT=__declspec(dllexport)",
     };
+    const win8_cpp_args = base_cpp_args ++ &[_][]const u8{
+        "-DNTDDI_VERSION=NTDDI_WIN8",
+        // Need this to actually get our functions in the export table
+        "-DJNIEXPORT=__declspec(dllexport)",
+    };
+    const win81_cpp_args = base_cpp_args ++ &[_][]const u8{
+        "-DNTDDI_VERSION=NTDDI_WIN81",
+        // Need this to actually get our functions in the export table
+        "-DJNIEXPORT=__declspec(dllexport)",
+    };
     const win10_cpp_args = base_cpp_args ++ &[_][]const u8{
         "-DNTDDI_VERSION=NTDDI_WIN10",
         // Need this to actually get our functions in the export table
         "-DJNIEXPORT=__declspec(dllexport)",
     };
 
-    const cpp_args: []const []const u8 = if (target.result.os.tag == .windows) blk: {
-        // NTDDI_WIN10 in sdkddkver.h is 0x0A000000 (NT major version 10).
-        // Anything below that is Windows 7/8/8.1 (NT 6.x) or older.
-        const ntddi_win10: u32 = 0x0A000000;
-        const is_win10_or_later = @intFromEnum(target.result.os.version_range.windows.min) >= ntddi_win10;
-        break :blk if (is_win10_or_later) win10_cpp_args[0..] else win7_cpp_args[0..];
-    } else base_cpp_args;
+    // Use a switch on the tagged version_range union for proper Zig semantics.
+    // NTDDI version constants match sdkddkver.h values packed as u32.
+    const cpp_args: []const []const u8 = switch (target.result.os.version_range) {
+        .windows => |range| blk: {
+            const ntddi_min = @intFromEnum(range.min);
+            const ntddi_win10: u32 = 0x0A000000; // NT 10.0 (Windows 10)
+            const ntddi_win81: u32 = 0x06030000; // NT 6.3  (Windows 8.1)
+            const ntddi_win8: u32  = 0x06020000; // NT 6.2  (Windows 8)
+            break :blk if (ntddi_min >= ntddi_win10) win10_cpp_args[0..]
+                else if (ntddi_min >= ntddi_win81) win81_cpp_args[0..]
+                else if (ntddi_min >= ntddi_win8) win8_cpp_args[0..]
+                else win7_cpp_args[0..];
+        },
+        else => base_cpp_args[0..],
+    };
 
     // Add source files
     lib.addCSourceFiles(.{

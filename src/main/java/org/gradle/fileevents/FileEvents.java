@@ -103,27 +103,25 @@ public class FileEvents {
     }
 
     private static String getWindowsVariant() {
-        return isWindows10OrLater() ? "10" : "6.1";
-    }
-
-    /**
-     * Returns true when the JVM is running on Windows 10 or later (including Windows 11).
-     * Windows 7, 8, and 8.1 all have an OS major version of 6.
-     */
-    private static boolean isWindows10OrLater() {
         String osVersion = System.getProperty("os.version");
         if (osVersion != null) {
             try {
                 String[] parts = osVersion.split("\\.");
-                if (parts.length > 0) {
+                if (parts.length >= 2) {
                     int majorVersion = Integer.parseInt(parts[0]);
-                    return majorVersion >= 10;
+                    int minorVersion = Integer.parseInt(parts[1]);
+                    if (majorVersion >= 10) {
+                        return "10";   // Windows 10 or later (including Windows 11)
+                    } else if (majorVersion == 6) {
+                        if (minorVersion >= 3) return "6.3";      // Windows 8.1
+                        else if (minorVersion >= 2) return "6.2"; // Windows 8
+                    }
                 }
             } catch (NumberFormatException ignored) {
                 // Fall through to the default
             }
         }
-        return false;
+        return "6.1";  // Default: Windows 7
     }
 
     /**

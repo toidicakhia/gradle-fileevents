@@ -180,6 +180,18 @@ bool WatchPoint::isValidDirectory() {
 }
 
 ListenResult WatchPoint::listen() {
+#if (NTDDI_VERSION >= NTDDI_WIN10_RS3)
+    BOOL success = ReadDirectoryChangesExW(
+        directoryHandle,                   // handle to directory
+        &eventBuffer[0],                   // read results buffer
+        (DWORD) eventBuffer.capacity(),    // length of buffer
+        TRUE,                              // include children
+        EVENT_MASK,                        // filter conditions
+        NULL,                              // bytes returned
+        &overlapped,                       // overlapped buffer
+        &handleEventCallback,              // completion routine
+        ReadDirectoryNotifyExtendedInformation);
+#else
     BOOL success = ReadDirectoryChangesW(
         directoryHandle,                   // handle to directory
         &eventBuffer[0],                   // read results buffer
@@ -189,6 +201,7 @@ ListenResult WatchPoint::listen() {
         NULL,                              // bytes returned
         &overlapped,                       // overlapped buffer
         &handleEventCallback);             // completion routine
+#endif
     if (success) {
         status = WatchPointStatus::LISTENING;
         return ListenResult::SUCCESS;
@@ -282,7 +295,7 @@ void Server::handleEvents(WatchPoint* watchPoint, DWORD errorCode, const vector<
         } else {
             int index = 0;
             for (;;) {
-                FILE_NOTIFY_INFORMATION* current = (FILE_NOTIFY_INFORMATION*) &eventBuffer[index];
+                NOTIFY_INFO* current = (NOTIFY_INFO*) &eventBuffer[index];
                 handleEvent(env, path, current);
                 if (current->NextEntryOffset == 0) {
                     break;
@@ -304,7 +317,7 @@ void Server::handleEvents(WatchPoint* watchPoint, DWORD errorCode, const vector<
     }
 }
 
-void Server::handleEvent(JNIEnv* env, const wstring& watchedPathW, FILE_NOTIFY_INFORMATION* info) {
+void Server::handleEvent(JNIEnv* env, const wstring& watchedPathW, NOTIFY_INFO* info) {
     wstring changedPathW = wstring(info->FileName, 0, info->FileNameLength / sizeof(wchar_t));
     if (!changedPathW.empty()) {
         changedPathW.insert(0, 1, L'\\');
@@ -319,12 +332,20 @@ void Server::handleEvent(JNIEnv* env, const wstring& watchedPathW, FILE_NOTIFY_I
     } else if (info->Action == FILE_ACTION_REMOVED || info->Action == FILE_ACTION_RENAMED_OLD_NAME) {
         type = ChangeType::REMOVED;
     } else if (info->Action == FILE_ACTION_MODIFIED) {
+#if (NTDDI_VERSION >= NTDDI_WIN10_RS3)
+        if (info->FileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            // Ignore MODIFIED events on directories
+            logToJava(LogLevel::TRACE_LEVEL, "Ignored MODIFIED event on directory", nullptr);
+            return;
+        }
+#else
         DWORD attrib = GetFileAttributesW(changedPathW.c_str());
         if (attrib != INVALID_FILE_ATTRIBUTES && (attrib & FILE_ATTRIBUTE_DIRECTORY)) {
             // Ignore MODIFIED events on directories
             logToJava(LogLevel::TRACE_LEVEL, "Ignored MODIFIED event on directory", nullptr);
             return;
         }
+#endif
         type = ChangeType::MODIFIED;
     } else {
         logToJava(LogLevel::WARN_LEVEL, "Unknown event 0x%x for %s", info->Action, wideToUtf8String(changedPathW).c_str());

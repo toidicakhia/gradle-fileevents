@@ -32,14 +32,26 @@ pub fn build(b: *std.Build) void {
         "-Wno-unguarded-availability-new",
     };
 
-    const cpp_args = if (target.result.os.tag == .windows)
-        base_cpp_args ++ &[_][]const u8{
-            "-DNTDDI_VERSION=NTDDI_WIN7",
-            // Need this to actually get our functions in the export table
-            "-DJNIEXPORT=__declspec(dllexport)",
+    const cpp_args: []const []const u8 = if (target.result.os.tag == .windows) blk: {
+        // NTDDI_WIN10_RS3 = 0x0A000004 (Windows 10 version 1709 / Fall Creators Update, build 16299+)
+        // ReadDirectoryChangesExW and FILE_NOTIFY_EXTENDED_INFORMATION were introduced in that release.
+        const ntddi_win10_rs3: u32 = 0x0A000004;
+        const ntddi_min = @intFromEnum(target.result.os.version_range.windows.min);
+        if (ntddi_min >= ntddi_win10_rs3) {
+            break :blk base_cpp_args ++ &[_][]const u8{
+                // ReadDirectoryChangesExW + FILE_NOTIFY_EXTENDED_INFORMATION require Windows 10 RS3+
+                "-DNTDDI_VERSION=NTDDI_WIN10_RS3",
+                // Need this to actually get our functions in the export table
+                "-DJNIEXPORT=__declspec(dllexport)",
+            };
+        } else {
+            break :blk base_cpp_args ++ &[_][]const u8{
+                "-DNTDDI_VERSION=NTDDI_WIN7",
+                // Need this to actually get our functions in the export table
+                "-DJNIEXPORT=__declspec(dllexport)",
+            };
         }
-    else
-        base_cpp_args;
+    } else base_cpp_args;
 
     // Add source files
     lib.addCSourceFiles(.{

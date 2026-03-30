@@ -103,7 +103,7 @@ public class FileEvents {
      *
      * <ul>
      *   <li>Windows 10 / 11 (NT major version {@code >= 10}): uses
-     *       {@code windows.10.0.16299} — the build compiled with
+     *       {@code windows.win10_rs3} — the build compiled with
      *       {@code NTDDI_WIN10_RS3} that leverages
      *       {@code ReadDirectoryChangesExW} and
      *       {@code FILE_NOTIFY_EXTENDED_INFORMATION}.</li>
@@ -120,7 +120,7 @@ public class FileEvents {
                 int majorVersion = Integer.parseInt(parts[0]);
                 if (majorVersion >= 10) {
                     // Use the Windows 10 RS3+ build (ReadDirectoryChangesExW)
-                    return "windows.10.0.16299";
+                    return "windows.win10_rs3";
                 }
             }
         } catch (NumberFormatException ignored) {

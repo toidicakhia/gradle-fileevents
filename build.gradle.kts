@@ -110,6 +110,8 @@ zig {
         create("aarch64-linux-musl")
         create("x86_64-windows-gnu")
         create("aarch64-windows-gnu")
+        create("x86_64-windows.win10_rs3-gnu")
+        create("aarch64-windows.win10_rs3-gnu")
         create("x86_64-macos") {
             libcFile = layout.projectDirectory.file("libc-macos.txt")
         }

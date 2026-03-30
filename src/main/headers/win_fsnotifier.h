@@ -21,6 +21,15 @@ using namespace std;
 
 #define EVENT_MASK (FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE)
 
+// On Windows 10 RS3 (version 1709, build 16299+), use the extended notification
+// info struct which provides richer per-event metadata (e.g. FileAttributes)
+// without requiring an extra GetFileAttributesW() syscall per event.
+#if (NTDDI_VERSION >= NTDDI_WIN10_RS3)
+typedef FILE_NOTIFY_EXTENDED_INFORMATION NOTIFY_INFO;
+#else
+typedef FILE_NOTIFY_INFORMATION NOTIFY_INFO;
+#endif
+
 class Server;
 class WatchPoint;
 
@@ -142,7 +151,7 @@ protected:
     void shutdownRunLoop() override;
 
 private:
-    void handleEvent(JNIEnv* env, const wstring& watchedPath, FILE_NOTIFY_INFORMATION* info);
+    void handleEvent(JNIEnv* env, const wstring& watchedPath, NOTIFY_INFO* info);
 
     void registerPath(const u16string& path);
     bool unregisterPath(const u16string& path);

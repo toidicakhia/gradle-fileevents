@@ -77,11 +77,11 @@ public class FileEvents {
     private static String getPlatformName(Platform platform) {
         switch (platform.getId()) {
             case "windows-i386":
-                return "i386-windows-gnu";
+                return "i386-" + getWindowsVariant() + "-gnu";
             case "windows-amd64":
-                return "x86_64-windows-gnu";
+                return "x86_64-" + getWindowsVariant() + "-gnu";
             case "windows-aarch64":
-                return "aarch64-windows-gnu";
+                return "aarch64-" + getWindowsVariant() + "-gnu";
             case "linux-i386":
                 return "i386-linux-" + getLinuxVariant();
             case "linux-amd64":
@@ -95,6 +95,38 @@ public class FileEvents {
             default:
                 throw new NativeIntegrationUnavailableException(String.format("Native file events integration is not available for %s.", platform));
         }
+    }
+
+    /**
+     * Returns the Windows-version-specific directory component used to locate
+     * the pre-built DLL.
+     *
+     * <ul>
+     *   <li>Windows 10 / 11 (NT major version {@code >= 10}): uses
+     *       {@code windows.win10_rs3} — the build compiled with
+     *       {@code NTDDI_WIN10_RS3} that leverages
+     *       {@code ReadDirectoryChangesExW} and
+     *       {@code FILE_NOTIFY_EXTENDED_INFORMATION}.</li>
+     *   <li>Windows 7 / 8 / 8.1 and any unrecognised version: uses the plain
+     *       {@code windows} directory — the build compiled with
+     *       {@code NTDDI_WIN7}.</li>
+     * </ul>
+     */
+    private static String getWindowsVariant() {
+        String osVersion = System.getProperty("os.version", "");
+        try {
+            String[] parts = osVersion.split("\\.");
+            if (parts.length > 0) {
+                int majorVersion = Integer.parseInt(parts[0]);
+                if (majorVersion >= 10) {
+                    // Use the Windows 10 RS3+ build (ReadDirectoryChangesExW)
+                    return "windows.win10_rs3";
+                }
+            }
+        } catch (NumberFormatException ignored) {
+            // Fall through to the Windows 7/8/8.1 variant
+        }
+        return "windows";
     }
 
     private static String getLinuxVariant() {
